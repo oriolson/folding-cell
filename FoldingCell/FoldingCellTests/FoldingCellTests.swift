@@ -152,4 +152,110 @@ class FoldingCellTests: XCTestCase {
         }
     }
     
+    func testPerformanceFoldingCellInitialization() {
+        // Performance test for cell initialization
+        self.measureBlock {
+            for _ in 0..<100 {
+                let cell = FoldingCell(style: .Default, reuseIdentifier: "PerfTestCell")
+                _ = cell.itemCount
+                _ = cell.backViewColor
+            }
+        }
+    }
+    
+    func testPerformanceRotatedViewCreation() {
+        // Performance test for RotatedView creation and transform
+        self.measureBlock {
+            for _ in 0..<50 {
+                let rotatedView = RotatedView(frame: CGRect(x: 0, y: 0, width: 100, height: 50))
+                _ = rotatedView.transform3d()
+                rotatedView.addBackView(25, color: UIColor.redColor())
+            }
+        }
+    }
+    
+    func testFoldingCellPropertyBoundaries() {
+        let cell = FoldingCell(style: .Default, reuseIdentifier: "TestCell")
+        
+        // Test very large itemCount
+        cell.itemCount = 1000
+        XCTAssertEqual(cell.itemCount, 1000, "itemCount should handle large values")
+        
+        // Test itemCount of 1 (edge case)
+        cell.itemCount = 1
+        XCTAssertEqual(cell.itemCount, 1, "itemCount should accept value of 1")
+        
+        // Test itemCount of 0 (potential edge case)
+        cell.itemCount = 0
+        XCTAssertEqual(cell.itemCount, 0, "itemCount should accept value of 0")
+    }
+    
+    func testRotatedViewEdgeCases() {
+        // Test RotatedView with zero frame
+        let zeroRotatedView = RotatedView(frame: CGRect.zero)
+        XCTAssertNotNil(zeroRotatedView, "RotatedView should initialize with zero frame")
+        XCTAssertEqual(zeroRotatedView.frame, CGRect.zero, "Zero frame should be preserved")
+        
+        // Test adding back view with zero height
+        zeroRotatedView.addBackView(0, color: UIColor.clearColor())
+        XCTAssertNotNil(zeroRotatedView.backView, "backView should be created even with zero height")
+        
+        // Test very large frame
+        let largeFrame = CGRect(x: 0, y: 0, width: 10000, height: 10000)
+        let largeRotatedView = RotatedView(frame: largeFrame)
+        XCTAssertEqual(largeRotatedView.frame, largeFrame, "Large frame should be handled correctly")
+    }
+    
+    func testFoldingCellAnimationStateConsistency() {
+        let cell = FoldingCell(style: .Default, reuseIdentifier: "TestCell")
+        
+        // Test multiple calls to isAnimating
+        for _ in 0..<10 {
+            XCTAssertFalse(cell.isAnimating(), "isAnimating should consistently return false initially")
+        }
+        
+        // Test selectedAnimation with different parameters
+        cell.selectedAnimation(true, animated: false, completion: nil)
+        cell.selectedAnimation(false, animated: false, completion: nil)
+        XCTAssertFalse(cell.isAnimating(), "Cell should not be animating after non-animated operations")
+    }
+    
+    func testUIViewSnapshotExtension() {
+        // Test the UIView extension for taking snapshots
+        let testView = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        testView.backgroundColor = UIColor.redColor()
+        
+        let snapshot = testView.pb_takeSnapshot(CGRect(x: 0, y: 0, width: 50, height: 50))
+        XCTAssertNotNil(snapshot, "Snapshot should not be nil")
+        
+        if let snapshot = snapshot {
+            XCTAssertEqual(snapshot.size.width, 50, "Snapshot width should match requested frame")
+            XCTAssertEqual(snapshot.size.height, 50, "Snapshot height should match requested frame")
+        }
+    }
+    
+    func testFoldingCellSelectionStyleSetting() {
+        let cell = FoldingCell(style: .Default, reuseIdentifier: "TestCell")
+        
+        // The commonInit method should set selectionStyle to .None
+        // We can't test this directly without calling commonInit, but we can test the property
+        cell.selectionStyle = .None
+        XCTAssertEqual(cell.selectionStyle, UITableViewCellSelectionStyle.None, "Selection style should be settable to None")
+        
+        cell.selectionStyle = .Blue
+        XCTAssertEqual(cell.selectionStyle, UITableViewCellSelectionStyle.Blue, "Selection style should be settable to Blue")
+    }
+    
+    func testFoldingCellReuseIdentifier() {
+        // Test cell creation with nil reuseIdentifier
+        let cellWithNilId = FoldingCell(style: .Default, reuseIdentifier: nil)
+        XCTAssertNotNil(cellWithNilId, "Cell should initialize with nil reuseIdentifier")
+        XCTAssertNil(cellWithNilId.reuseIdentifier, "Reuse identifier should be nil when passed nil")
+        
+        // Test cell creation with empty string reuseIdentifier
+        let cellWithEmptyId = FoldingCell(style: .Default, reuseIdentifier: "")
+        XCTAssertNotNil(cellWithEmptyId, "Cell should initialize with empty string reuseIdentifier")
+        XCTAssertEqual(cellWithEmptyId.reuseIdentifier, "", "Reuse identifier should be empty string when passed empty string")
+    }
+    
 }
